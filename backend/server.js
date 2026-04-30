@@ -21,13 +21,19 @@ app.use('/api/dashboard', require('./routes/dashboard'));
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date() }));
 
 // Serve frontend in production
-const frontendPath = path.join(__dirname, '../frontend/dist');
+const frontendPath = path.join(__dirname, '../../frontend/dist');
 const fs = require('fs');
+console.log('Checking frontend path:', frontendPath);
 if (fs.existsSync(frontendPath)) {
+  console.log('Frontend dist found! Serving static files.');
   app.use(express.static(frontendPath));
   app.get('*', (req, res) => {
-    res.sendFile(path.join(frontendPath, 'index.html'));
+    if (!req.path.startsWith('/api')) {
+      res.sendFile(path.join(frontendPath, 'index.html'));
+    }
   });
+} else {
+  console.log('Frontend dist NOT found at:', frontendPath);
 }
 
 // Error handler

@@ -28,10 +28,10 @@ export default function Dashboard() {
   const handleCreateProject = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/projects', newProject);
+      const res = await api.post('/projects', newProject);
       setIsModalOpen(false);
       setNewProject({ name: '', description: '', color: '#6366f1' });
-      fetchDashboard();
+      navigate(`/projects/${res.data.project.id}`);
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to create project');
     }

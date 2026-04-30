@@ -54,4 +54,38 @@ router.get('/me', authenticate, (req, res) => {
   res.json({ user: req.user });
 });
 
+router.put('/profile', authenticate, validate([
+  body('name').notEmpty().withMessage('Name is required'),
+  body('githubToken').optional().notEmpty().withMessage('GitHub token cannot be empty')
+]), (req, res) => {
+  const { name, githubToken } = req.body;
+  
+  const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  const user = db.prepare('SELECT avatar FROM users WHERE id = ?').get(req.user.id);
+  const color = user.avatar.split('|')[1];
+  const newAvatar = `${initials}|${color}`;
+
+  db.prepare('UPDATE users SET name = ?, github_token = ?, avatar = ? WHERE id = ?')
+    .run(name, githubToken || null, newAvatar, req.user.id);
+
+  res.json({ message: 'Profile updated' });
+});
+
+router.put('/password', authenticate, validate([
+  body('currentPassword').notEmpty().withMessage('Current password is required'),
+  body('newPassword').isLength({ min: 6 }).withMessage('New password must be at least 6 characters')
+]), (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  
+  const user = db.prepare('SELECT password FROM users WHERE id = ?').get(req.user.id);
+  if (!bcrypt.compareSync(currentPassword, user.password)) {
+    return res.status(401).json({ error: 'Incorrect current password' });
+  }
+
+  const hashed = bcrypt.hashSync(newPassword, 10);
+  db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hashed, req.user.id);
+
+  res.json({ message: 'Password updated successfully' });
+});
+
 module.exports = router;

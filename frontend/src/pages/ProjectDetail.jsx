@@ -4,7 +4,7 @@ import api from '../api/axios';
 import { 
   Layout, Users, Plus, Settings, 
   Trash2, UserPlus, CheckCircle2, 
-  Clock, AlertCircle, MoreVertical 
+  Clock, AlertCircle, MoreVertical, X
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
@@ -16,6 +16,8 @@ export default function ProjectDetail() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
+  const [newMemberEmail, setNewMemberEmail] = useState('');
   const [newTask, setNewTask] = useState({ title: '', description: '', priority: 'medium', assignee_id: '' });
   const navigate = useNavigate();
 
@@ -40,6 +42,18 @@ export default function ProjectDetail() {
     fetchData();
   }, [projectId, navigate]);
 
+  const handleAddMember = async (e) => {
+    e.preventDefault();
+    try {
+      await api.post(`/projects/${projectId}/members`, { email: newMemberEmail, role: 'member' });
+      setIsMemberModalOpen(false);
+      setNewMemberEmail('');
+      fetchData();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to add member');
+    }
+  };
+
   const handleCreateTask = async (e) => {
     e.preventDefault();
     try {
@@ -49,6 +63,34 @@ export default function ProjectDetail() {
       fetchData();
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to create task');
+    }
+  };
+
+  const handleUpdateStatus = async (taskId, newStatus) => {
+    try {
+      await api.put(`/projects/${projectId}/tasks/${taskId}`, { status: newStatus });
+      fetchData();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to update task');
+    }
+  };
+
+  const handleUpdateAssignee = async (taskId, newAssigneeId) => {
+    try {
+      await api.put(`/projects/${projectId}/tasks/${taskId}`, { assignee_id: newAssigneeId });
+      fetchData();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to update assignee');
+    }
+  };
+
+  const handleRemoveMember = async (userId) => {
+    if (!window.confirm('Are you sure you want to remove this member?')) return;
+    try {
+      await api.delete(`/projects/${projectId}/members/${userId}`);
+      fetchData();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to remove member');
     }
   };
 
@@ -202,19 +244,39 @@ export default function ProjectDetail() {
                   </p>
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-[10px] font-bold text-indigo-600">
-                        {task.assignee_name?.[0] || 'U'}
+                      <div 
+                        className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+                        style={{ backgroundColor: members.find(m => m.id === task.assignee_id)?.avatar?.split('|')[1] || '#94a3b8' }}
+                      >
+                        {task.assignee_name?.[0] || '?'}
                       </div>
-                      <span className="text-xs text-slate-500">{task.assignee_name || 'Unassigned'}</span>
+                      <select
+                        value={task.assignee_id || ''}
+                        onChange={(e) => handleUpdateAssignee(task.id, e.target.value)}
+                        className="text-xs text-slate-500 bg-transparent border-none outline-none cursor-pointer hover:text-indigo-600 transition"
+                      >
+                        <option value="">Unassigned</option>
+                        {members.map(m => (
+                          <option key={m.id} value={m.id}>{m.name}</option>
+                        ))}
+                      </select>
                     </div>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1 ${
-                      task.status === 'done' ? 'bg-emerald-100 text-emerald-600' :
-                      task.status === 'in_progress' ? 'bg-indigo-100 text-indigo-600' :
-                      'bg-slate-200 text-slate-600'
-                    }`}>
-                      {task.status === 'done' && <CheckCircle2 className="w-3 h-3" />}
-                      {task.status.replace('_', ' ')}
-                    </span>
+                    
+                    <select
+                      value={task.status}
+                      onChange={(e) => handleUpdateStatus(task.id, e.target.value)}
+                      className={`text-[10px] font-bold px-2 py-1 rounded border-none outline-none cursor-pointer transition ${
+                        task.status === 'done' ? 'bg-emerald-100 text-emerald-600' :
+                        task.status === 'in_progress' ? 'bg-indigo-100 text-indigo-600' :
+                        task.status === 'review' ? 'bg-amber-100 text-amber-600' :
+                        'bg-slate-200 text-slate-600'
+                      }`}
+                    >
+                      <option value="todo">TODO</option>
+                      <option value="in_progress">IN PROGRESS</option>
+                      <option value="review">REVIEW</option>
+                      <option value="done">DONE</option>
+                    </select>
                   </div>
                 </div>
               )) : (
@@ -236,11 +298,48 @@ export default function ProjectDetail() {
                 Team Members
               </h2>
               {isAdmin && (
-                <button className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition">
+                <button 
+                  onClick={() => setIsMemberModalOpen(true)}
+                  className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+                >
                   <UserPlus className="w-4 h-4" />
                 </button>
               )}
             </div>
+
+            {/* Add Member Modal */}
+            {isMemberModalOpen && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+                <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-200">
+                  <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+                    <h2 className="text-xl font-bold text-slate-800">Add Team Member</h2>
+                    <button onClick={() => setIsMemberModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
+                  <form onSubmit={handleAddMember} className="p-6 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Member's Email Address</label>
+                      <input
+                        type="email"
+                        required
+                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                        placeholder="user@example.com"
+                        value={newMemberEmail}
+                        onChange={(e) => setNewMemberEmail(e.target.value)}
+                      />
+                      <p className="mt-2 text-[10px] text-slate-500">Note: User must have an account on TaskFlow.</p>
+                    </div>
+                    <button
+                      type="submit"
+                      className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-indigo-200 mt-4"
+                    >
+                      Add to Project
+                    </button>
+                  </form>
+                </div>
+              </div>
+            )}
             
             <div className="space-y-4">
               {members.map(member => (
@@ -258,7 +357,10 @@ export default function ProjectDetail() {
                     </div>
                   </div>
                   {isAdmin && member.id !== project.owner_id && (
-                    <button className="p-1.5 text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition">
+                    <button 
+                      onClick={() => handleRemoveMember(member.id)}
+                      className="p-1.5 text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition"
+                    >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   )}

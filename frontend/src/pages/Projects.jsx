@@ -1,25 +1,40 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
-import { Layout, Plus, Users, Calendar, ChevronRight } from 'lucide-react';
+import { Layout, Plus, Users, Calendar, ChevronRight, AlertCircle, X } from 'lucide-react';
 
 export default function Projects() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newProject, setNewProject] = useState({ name: '', description: '', color: '#6366f1' });
+  const navigate = useNavigate();
+
+  const fetchProjects = async () => {
+    try {
+      const res = await api.get('/projects');
+      setProjects(res.data.projects);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const res = await api.get('/projects');
-        setProjects(res.data.projects);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchProjects();
   }, []);
+
+  const handleCreateProject = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await api.post('/projects', newProject);
+      setIsModalOpen(false);
+      navigate(`/projects/${res.data.project.id}`);
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to create project');
+    }
+  };
 
   if (loading) return (
     <div className="flex items-center justify-center h-[calc(100vh-64px)]">
@@ -34,11 +49,70 @@ export default function Projects() {
           <h1 className="text-2xl font-bold text-slate-800">Projects</h1>
           <p className="text-slate-500 text-sm">Manage your team's workspace</p>
         </div>
-        <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition duration-200 shadow-sm">
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition duration-200 shadow-sm"
+        >
           <Plus className="w-5 h-5" />
           Create Project
         </button>
       </div>
+
+      {/* New Project Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-slate-800">Create New Project</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <form onSubmit={handleCreateProject} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Project Name</label>
+                <input
+                  type="text"
+                  required
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  placeholder="e.g. Marketing Campaign"
+                  value={newProject.name}
+                  onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                <textarea
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none h-24 resize-none"
+                  placeholder="What is this project about?"
+                  value={newProject.description}
+                  onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Project Color</label>
+                <div className="flex gap-3">
+                  {['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6'].map(c => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setNewProject({ ...newProject, color: c })}
+                      className={`w-8 h-8 rounded-full transition ${newProject.color === c ? 'ring-4 ring-slate-200 scale-110' : ''}`}
+                      style={{ backgroundColor: c }}
+                    />
+                  ))}
+                </div>
+              </div>
+              <button
+                type="submit"
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-indigo-200 mt-4"
+              >
+                Create Project
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {projects.length > 0 ? projects.map((project) => (

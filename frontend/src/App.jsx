@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Projects from './pages/Projects';
 import ProjectDetail from './pages/ProjectDetail';
+import Settings from './pages/Settings';
 import AppLayout from './components/AppLayout';
 
 const PrivateRoute = ({ children }) => {
@@ -28,6 +29,7 @@ function AppContent() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/projects" element={<Projects />} />
         <Route path="/projects/:projectId" element={<ProjectDetail />} />
+        <Route path="/settings" element={<Settings />} />
       </Route>
 
       <Route path="/" element={<Navigate to="/dashboard" />} />
