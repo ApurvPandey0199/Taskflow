@@ -21,7 +21,7 @@ app.use('/api/dashboard', require('./routes/dashboard'));
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date() }));
 
 // Serve frontend in production
-const frontendPath = path.join(__dirname, '../../frontend/dist');
+const frontendPath = path.join(__dirname, '../frontend/dist');
 const fs = require('fs');
 console.log('Checking frontend path:', frontendPath);
 if (fs.existsSync(frontendPath)) {
