@@ -8,9 +8,11 @@ const { validate } = require('../middleware/validate');
 
 const router = express.Router();
 
+const { Octokit } = require('octokit');
+
 // Get all projects for user
-router.get('/', authenticate, (req, res) => {
-  const projects = db.prepare(`
+router.get('/', authenticate, async (req, res) => {
+  const localProjects = db.prepare(`
     SELECT p.*, u.name as owner_name, u.avatar as owner_avatar,
       (SELECT COUNT(*) FROM tasks WHERE project_id = p.id) as task_count,
       (SELECT COUNT(*) FROM tasks WHERE project_id = p.id AND status = 'done') as done_count,
@@ -21,7 +23,35 @@ router.get('/', authenticate, (req, res) => {
     JOIN users u ON u.id = p.owner_id
     ORDER BY p.created_at DESC
   `).all(req.user.id);
-  res.json({ projects });
+
+  let githubProjects = [];
+  const user = db.prepare('SELECT github_token FROM users WHERE id = ?').get(req.user.id);
+  
+  if (user?.github_token) {
+    try {
+      const octokit = new Octokit({ auth: user.github_token });
+      const { data } = await octokit.rest.repos.listForAuthenticatedUser({
+        sort: 'updated',
+        per_page: 10
+      });
+      githubProjects = data.map(repo => ({
+        id: `gh-${repo.id}`,
+        name: repo.name,
+        description: repo.description,
+        color: '#24292e', // GitHub black
+        status: repo.private ? 'private' : 'public',
+        owner_name: repo.owner.login,
+        task_count: repo.open_issues_count,
+        member_count: 1,
+        is_github: true,
+        url: repo.html_url
+      }));
+    } catch (err) {
+      console.error('GitHub fetch error:', err.message);
+    }
+  }
+
+  res.json({ projects: [...localProjects, ...githubProjects] });
 });
 
 // Create project

@@ -25,7 +25,8 @@ db.exec(`
     email TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
     avatar TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    github_token TEXT
   );
 
   CREATE TABLE IF NOT EXISTS projects (

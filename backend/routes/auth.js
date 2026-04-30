@@ -10,12 +10,15 @@ const { validate } = require('../middleware/validate');
 
 const router = express.Router();
 
+const { Octokit } = require('octokit');
+
 router.post('/signup', validate([
   body('email').isEmail().withMessage('Invalid email format'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-  body('name').notEmpty().withMessage('Name is required')
+  body('name').notEmpty().withMessage('Name is required'),
+  body('githubToken').optional().notEmpty().withMessage('GitHub token cannot be empty')
 ]), (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, githubToken } = req.body;
   
   const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email.toLowerCase());
   if (existing) return res.status(409).json({ error: 'Email already registered' });
@@ -26,14 +29,14 @@ router.post('/signup', validate([
   const colors = ['#6366f1','#8b5cf6','#ec4899','#f59e0b','#10b981','#3b82f6','#ef4444'];
   const avatar = `${initials}|${colors[Math.floor(Math.random() * colors.length)]}`;
 
-  db.prepare('INSERT INTO users (id, name, email, password, avatar) VALUES (?, ?, ?, ?, ?)')
-    .run(id, name, email.toLowerCase(), hashed, avatar);
+  db.prepare('INSERT INTO users (id, name, email, password, avatar, github_token) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(id, name, email.toLowerCase(), hashed, avatar, githubToken || null);
 
   const token = jwt.sign({ id }, JWT_SECRET, { expiresIn: '7d' });
-  res.status(201).json({ token, user: { id, name, email: email.toLowerCase(), avatar } });
+  res.status(201).json({ token, user: { id, name, email: email.toLowerCase(), avatar, githubToken } });
 });
 
-router.post('/login', (req, res) => {
+router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password)
     return res.status(400).json({ error: 'Email and password required' });
@@ -44,7 +47,7 @@ router.post('/login', (req, res) => {
     return res.status(401).json({ error: 'Incorrect password' });
 
   const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '7d' });
-  res.json({ token, user: { id: user.id, name: user.name, email: user.email, avatar: user.avatar } });
+  res.json({ token, user: { id: user.id, name: user.name, email: user.email, avatar: user.avatar, githubToken: user.github_token } });
 });
 
 router.get('/me', authenticate, (req, res) => {

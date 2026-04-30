@@ -168,7 +168,7 @@ export default function Dashboard() {
               {data?.myTasks?.length > 0 ? data.myTasks.map((task) => (
                 <div key={task.id} className="p-4 hover:bg-slate-50 transition duration-150 flex items-center justify-between group">
                   <div className="flex items-center gap-4">
-                    <div className="w-2 h-10 rounded-full" style={{ backgroundColor: task.project_color }}></div>
+                    <div className="w-2 h-10 rounded-full" style={{ backgroundColor: task.project_color || '#6366f1' }}></div>
                     <div>
                       <h3 className="font-semibold text-slate-800 group-hover:text-indigo-600 transition">{task.title}</h3>
                       <p className="text-sm text-slate-500">{task.project_name}</p>

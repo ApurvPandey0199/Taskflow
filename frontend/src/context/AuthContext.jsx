@@ -29,8 +29,8 @@ export const AuthProvider = ({ children }) => {
     return res.data;
   };
 
-  const signup = async (name, email, password) => {
-    const res = await api.post('/auth/signup', { name, email, password });
+  const signup = async (name, email, password, githubToken) => {
+    const res = await api.post('/auth/signup', { name, email, password, githubToken });
     localStorage.setItem('token', res.data.token);
     setUser(res.data.user);
     return res.data;
