@@ -52,6 +52,24 @@ export default function Dashboard() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* GitHub Integration Info */}
+      <div className="mb-6 bg-slate-800 text-white p-4 rounded-xl flex items-center justify-between border border-slate-700 shadow-lg overflow-hidden relative group">
+        <div className="flex items-center gap-4 relative z-10">
+          <div className="bg-white/10 p-2 rounded-lg">
+            <Users className="w-6 h-6 text-indigo-300" />
+          </div>
+          <div>
+            <h3 className="font-bold text-sm">GitHub Deployment Sync</h3>
+            <p className="text-xs text-slate-400">Project is ready for Railway & GitHub sync</p>
+          </div>
+        </div>
+        <div className="flex gap-2 relative z-10">
+          <span className="px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full text-[10px] font-bold border border-indigo-500/30">Auto-Deploy On</span>
+          <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-full text-[10px] font-bold border border-emerald-500/30">Connected</span>
+        </div>
+        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-indigo-500/20 transition-all duration-500"></div>
+      </div>
+
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-bold text-slate-800">Dashboard Overview</h1>
         <button 
