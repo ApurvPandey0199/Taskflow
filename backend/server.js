@@ -27,7 +27,7 @@ console.log('Checking frontend path:', frontendPath);
 if (fs.existsSync(frontendPath)) {
   console.log('Frontend dist found! Serving static files.');
   app.use(express.static(frontendPath));
-  app.get('*', (req, res) => {
+  app.get('(.*)', (req, res) => {
     if (!req.path.startsWith('/api')) {
       res.sendFile(path.join(frontendPath, 'index.html'));
     }
