@@ -38,8 +38,20 @@ if (fs.existsSync(frontendPath)) {
 
 // Error handler
 app.use((err, req, res, next) => {
-  console.error(err);
+  console.error('Express Error:', err.message);
   res.status(500).json({ error: 'Internal server error' });
+});
+
+// Global crash handlers
+process.on('uncaughtException', (err) => {
+  console.error('CRITICAL: Uncaught Exception:', err.message);
+  console.error(err.stack);
+  // Give some time for logs to flush
+  setTimeout(() => process.exit(1), 1000);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('CRITICAL: Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
 const PORT = process.env.PORT || 3001;
